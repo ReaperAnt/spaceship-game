@@ -1,0 +1,261 @@
+
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+<title>Asteroid Shooting Game</title>
+
+<script type="application/javascript">
+
+var INTERVAL = 20;
+var canvas;             // The canvas shown on the page.
+var ctx;                // The context, used to access the canvas.
+var WIDTH = 640;
+var HEIGHT = 480;
+
+var shipSize = 64;
+var spaceshipImage = new Image();
+spaceshipImage.src = "xwing.png";
+
+var asteroidImage = new Image();
+asteroidImage.src = "rolling.png";
+
+var bulletImage = new Image();
+bulletImage.src = "bullet.png";
+
+var starsImage = new Image();
+starsImage.src = "stars.png";
+
+var boostImage = new Image();
+boostImage.src = "RocketFire.png";
+
+var shipX = 300;
+var shipY = 300;
+var margin = 16;
+var next = -1;
+var speed = 1;
+var journey = 1500.0;
+var boost = false;
+
+function rand() {
+	return Math.floor(Math.random() * (WIDTH - 32));
+}
+
+
+class Asteroid {
+	constructor() {
+		this.X = 0;
+		this.Y = -rand();
+		this.Col = Math.floor(Math.random() * 7);
+		this.Size = 32;
+	}
+	setX(newX) {
+		this.X = newX;
+	}
+	setY(newY) {
+		this.Y = newY;
+	}
+	drawBoulder() {
+		ctx.drawImage(asteroidImage, this.Col * 32, 0, this.Size, this.Size, this.X, this.Y, this.Size, this.Size);
+	}
+}
+
+class Bullet {
+	constructor() {
+		this.X = 0;
+		this.Y = 0;
+		this.width = 12;
+		this.height = 27;
+	}
+	fire(newX, newY) {
+		this.X = newX;
+		this.Y = newY;
+	}
+	drawBullet() {
+		ctx.drawImage(bulletImage, this.X, this.Y, this.width, this.height);
+	}
+}
+
+let asteroids = new Array();
+let bullets = new Array();
+
+for (var i = 0; i < 10; i++) {
+	asteroids.push(new Asteroid());
+	bullets.push(new Bullet());
+	asteroids[i].setX(rand());
+	bullets[i].fire(WIDTH, HEIGHT);
+}
+
+
+function falling() {
+	for (var i = 0; i < 10; i++) {
+		asteroids[i].Y++;
+		if (asteroids[i].Y > HEIGHT) {
+			asteroids[i].setX(rand());
+			asteroids[i].setY(-rand());
+		}
+		if (asteroids[i].X + margin <= shipX + shipSize && shipX + margin <= asteroids[i].X + asteroids[i].Size &&
+	    	asteroids[i].Y + margin <= shipY + shipSize && shipY + margin <= asteroids[i].Y + asteroids[i].Size) {
+			document.bgColor = "red";
+			clearInterval(myInterval);
+		}
+	}
+}
+
+
+function shooting() {
+	for (var i = 0; i < 10; i++) {
+		bullets[i].Y -= 2;
+		if (bullets[i].Y < -bullets[i].height) {
+			bullets[i].Y = HEIGHT;
+			bullets[i].X = WIDTH;
+		}
+		for (var j = 0; j < 10; j++) {
+			if (bullets[i].X <= asteroids[j].X + asteroids[j].Size && asteroids[j].X <= bullets[i].X + bullets[i].width &&
+	    		bullets[i].Y <= asteroids[j].Y + asteroids[j].Size && asteroids[j].Y <= bullets[i].Y + bullets[i].height) {
+				bullets[i].Y = HEIGHT;
+				bullets[i].X = WIDTH;
+				asteroids[j].setX(rand());
+				asteroids[j].setY(-rand());
+			}
+		}
+	}
+}
+
+
+function rollingAsteroids() {
+	for (var i = 0; i < 10; i++) {
+		asteroids[i].Col++;
+		if (asteroids[i].Col > 7)
+			asteroids[i].Col = 0;
+	}
+}
+
+function drawEverything() {
+	ctx.fillStyle = "black";
+	ctx.fillRect(0, 0, WIDTH, HEIGHT);
+	ctx.drawImage(starsImage, 0, journey, WIDTH*2, HEIGHT*2, 20, 0, WIDTH, HEIGHT);
+	journey -= 0.1;
+	if (journey < 0) {
+		document.bgColor = "green";
+		clearInterval(myInterval);
+	}
+	for (var i = 0; i < 10; i++)
+		bullets[i].drawBullet();
+	if (boost === true) {
+		speed = 2;
+		ctx.drawImage(boostImage, shipX + margin, shipY + shipSize, 32, 32);
+	} else
+		speed = 1;
+	ctx.drawImage(spaceshipImage, shipX, shipY, shipSize, shipSize);
+	for (var i = 0; i < 10; i++)
+		asteroids[i].drawBoulder();
+}
+
+function eraseEverything() {
+	ctx.clearRect(0, 0,WIDTH, HEIGHT);
+}
+
+
+function Tick() {
+	eraseEverything();
+	falling();
+	shooting();
+	drawEverything();
+}
+
+
+function loadComplete() {
+	canvas = document.getElementById("theCanvas");
+	ctx = canvas.getContext("2d");
+	myInterval = self.setInterval(function(){Tick()}, 5);
+	var rollInterval = self.setInterval(function(){rollingAsteroids()}, 100);
+}
+
+</script>
+</head>
+
+<body onload="loadComplete()" bgcolor="#0f0000" text="#ffffff">
+<center>
+<script type="application/javascript">
+	document.write('<center>');
+	document.write('<canvas id="theCanvas" tabindex="1" width="' + WIDTH
+	+ '" height="' + HEIGHT + '"></canvas>');
+	document.write('</center>');
+</script>
+<h1>Avoid the asteroids and escape the planet's gravity field!</h1>
+<h2>Press WASD to move</h2>
+<h3>SPACE: Shoot &nbsp &nbsp L.SHIFT: Boost</h3>
+</center>
+
+
+<script>
+var keys = {};
+
+document.onkeydown = e => {
+	if (!keys[e.code]) {
+		keys[e.code] = true;
+	}
+};
+
+document['onkeyup'] = function(event) {
+	event = event || window.event;
+	var key = event.which || event.cursor;
+	switch (key) {
+	case 16:
+		keys["ShiftLeft"] = false;
+		boost = false;
+		break;
+	case 32:
+		next++;
+		if (next >= 10)
+			next = 0;
+		if (bullets[next].X != WIDTH)
+			break;
+		bullets[next].fire(shipX + shipSize/2 - margin/2, shipY);
+		break;
+	case 65:
+		keys["KeyA"] = false;
+		break;
+	case 68:
+		keys["KeyD"] = false;
+		break;
+	case 83:  
+		keys["KeyS"] = false;
+		break; 
+	case 87:
+		keys["KeyW"] = false;
+		break;
+	}
+};
+
+move = () => {
+	if (keys["KeyA"]) {
+		shipX -= speed;
+		if (shipX < 0)
+			shipX = 0;
+	}
+	if (keys["KeyD"]) {
+		shipX += speed;
+		if (shipX + shipSize > WIDTH)
+			shipX = WIDTH - shipSize;
+	}
+	if (keys["KeyS"]) {
+		shipY += speed;
+		if (shipY + shipSize > HEIGHT)
+			shipY = HEIGHT - shipSize;
+	}
+	if (keys["KeyW"]) {
+		shipY -= speed;
+		if (shipY < 0)
+			shipY = 0;
+	}
+	if (keys["ShiftLeft"]) {
+		if (document.bgColor != "red" && document.bgColor != "green")
+			boost = true;
+	}
+};
+
+setInterval(move, 5);
+
+</script>
+</body></html>
